@@ -1,0 +1,65 @@
+/* Navbar Container */
+.navbar {
+    background-color: #000000ea; /* Dark blue background */
+    padding: 15px 0;
+    position: fixed; /* Sticks to the top */
+    top: 0;
+    width: 100%;
+    z-index: 1000; /* Stays above other content */
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+  }
+  
+  /* Inner Container for Alignment */
+  .navbar-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px; /* Limits width for large screens */
+    margin: 0 auto; /* Centers the container */
+    padding: 0 20px;
+  }
+  
+  /* Logo Styling */
+  .navbar-logo {
+    color: #fff;
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  
+  /* Menu List */
+  .navbar-menu {
+    list-style: none;
+    display: flex;
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* Menu Items */
+  .navbar-item {
+    margin-left: 30px; /* Space between items */
+  }
+  
+  /* Links */
+  .navbar-link {
+    color: #fff;
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 500;
+    padding: 8px 15px;
+    border-radius: 5px;
+    transition: background-color 0.3s, color 0.3s;
+  }
+  
+  /* Hover Effect */
+  .navbar-link:hover {
+    background-color: #1f3342; /* Slightly lighter on hover */
+    color: #ecf0f1; /* Light text */
+  }
+  
+  /* Active Link (Optional) */
+  .navbar-link:active {
+    background-color: #41556d; /* Teal accent for active state */
+  }
