@@ -30,8 +30,9 @@ const User = () => {
 
       if (response.ok) {
         if (isSignIn) {
-          // Successful sign-in: Navigate to /shop
+          // Successful sign-in: Store userId and navigate to /shop
           alert('Login successful!');
+          localStorage.setItem('userId', result.userId);
           navigate('/shop');
         } else {
           // Successful sign-up: Prompt to sign in
@@ -52,6 +53,10 @@ const User = () => {
 
   return (
     <div className="user-module">
+      <video autoPlay loop muted playsInline>
+        <source src="/The_Images/4791_Fruit_Raspberries_1920x1080.mov" type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
       <div className="form-container">
         <h1>{isSignIn ? 'Sign In to GeoCart' : 'Join GeoCart'}</h1>
         <p className="subtitle">

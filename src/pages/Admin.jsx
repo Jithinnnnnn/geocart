@@ -71,7 +71,7 @@ const Sidebar = ({ activeSection, setActiveSection, onLogout }) => (
       <SidebarItem label="Manage Shops" isActive={activeSection === 'manageShops'} onClick={() => setActiveSection('manageShops')} />
       <SidebarItem label="Manage Users" isActive={activeSection === 'manageUsers'} onClick={() => setActiveSection('manageUsers')} />
       <SidebarItem label="Manage Products" isActive={activeSection === 'manageProducts'} onClick={() => setActiveSection('manageProducts')} />
-      <SidebarItem label="Orders" disabled={true} />
+      <SidebarItem label="Order History" isActive={activeSection === 'orderHistory'} onClick={() => setActiveSection('orderHistory')} />
       <SidebarItem label="Contact" isActive={activeSection === 'contact'} onClick={() => setActiveSection('contact')} />
     </nav>
     <div className="mt-6">
@@ -99,7 +99,7 @@ const Dashboard = ({ setActiveSection }) => {
   const dashboardItems = [
     { title: "Products", description: "Manage your product inventory", action: () => setActiveSection('manageProducts'), color: "blue", disabled: false },
     { title: "Shops", description: "Manage registered shops", action: () => setActiveSection('manageShops'), color: "green", disabled: false },
-    { title: "Orders", description: "Process and track customer orders", action: null, color: "yellow", disabled: true },
+    { title: "Order History", description: "View and manage customer orders", action: () => setActiveSection('orderHistory'), color: "yellow", disabled: false },
     { title: "Contact", description: "View customer messages", action: () => setActiveSection('contact'), color: "purple", disabled: false },
     { title: "Users", description: "Manage user accounts and permissions", action: () => setActiveSection('manageUsers'), color: "purple", disabled: false },
   ];
@@ -189,7 +189,7 @@ const AddProductForm = ({ onAdd, onCancel, storeId }) => {
 
   return (
     <div className="bg-gray-100 p-4 rounded-lg mt-2">
-      <h4 className="text-lg font-semibold mb-2"></h4>
+      <h4 className="text-lg font-semibold mb-2">Add Product</h4>
       <form onSubmit={handleSubmit} className="space-y-2">
         <FormField id="name" label="Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter product name" required={true} />
         <FormField id="price" label="Price" type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="Enter price" required={true} />
@@ -281,7 +281,7 @@ const ManageShops = () => {
     <div>
       <div className="bg-white p-6 rounded-lg shadow-md">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-2xl font-semibold">Manage Shops</h3>
+          <h3 className="text-2xl font-semibold">Manage Shops &nbsp;</h3>
           <div>
             <button className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 mr-2" onClick={fetchShops}>
               Refresh
@@ -360,7 +360,7 @@ const ManageShops = () => {
 const ManageUsers = ({ users, handleDeleteUser, fetchUsers, isLoadingUsers }) => (
   <div className="bg-white p-6 rounded-lg shadow-md">
     <div className="flex justify-between items-center mb-4">
-      <h3 className="text-2xl font-semibold">User Accounts</h3>
+      <h3 className="text-2xl font-semibold">User Accounts&nbsp;</h3>
       <button className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700" onClick={fetchUsers}>
         Refresh
       </button>
@@ -398,7 +398,76 @@ const ManageUsers = ({ users, handleDeleteUser, fetchUsers, isLoadingUsers }) =>
   </div>
 );
 
+// --- Manage Products Component ---
+const AddProductFormStandalone = ({ onAdd, onCancel }) => {
+  const [name, setName] = useState('');
+  const [price, setPrice] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
+  const [storeId, setStoreId] = useState('');
+  const [stores, setStores] = useState([]);
 
+  useEffect(() => {
+    const fetchStores = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/shops');
+        if (!response.ok) throw new Error('Failed to fetch stores');
+        const data = await response.json();
+        setStores(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error('Fetch stores error:', err);
+      }
+    };
+    fetchStores();
+  }, []);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const priceNum = parseFloat(price);
+    if (isNaN(priceNum) || priceNum < 0) {
+      alert('Price must be a positive number');
+      return;
+    }
+    if (!storeId) {
+      alert('Please select a store');
+      return;
+    }
+    onAdd({ name, price: priceNum, imageUrl, store: storeId });
+    setName('');
+    setPrice('');
+    setImageUrl('');
+    setStoreId('');
+  };
+
+  return (
+    <div className="bg-gray-50 p-6 rounded-lg mt-6">
+      <h3 className="text-xl font-semibold mb-4">Add New Product</h3>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <FormField id="name" label="Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter product name" required={true} />
+        <FormField id="price" label="Price" type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="Enter price" required={true} />
+        <FormField id="imageUrl" label="Image URL" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="Enter image URL" required={true} />
+        <div>
+          <label htmlFor="storeId" className="block text-sm font-medium">Store</label>
+          <select
+            id="storeId"
+            value={storeId}
+            onChange={(e) => setStoreId(e.target.value)}
+            className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+            required
+          >
+            <option value="">Select a store</option>
+            {stores.map((store) => (
+              <option key={store._id} value={store._id}>{store.name}</option>
+            ))}
+          </select>
+        </div>
+        <div className="flex space-x-4">
+          <button type="submit" className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">Add Product</button>
+          <button type="button" onClick={onCancel} className="bg-gray-300 text-gray-700 py-2 px-4 rounded hover:bg-gray-400">Cancel</button>
+        </div>
+      </form>
+    </div>
+  );
+};
 
 const ManageProducts = () => {
   const [products, setProducts] = useState([]);
@@ -461,12 +530,14 @@ const ManageProducts = () => {
     <div>
       <div className="bg-white p-6 rounded-lg shadow-md">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-2xl font-semibold">Manage Products</h3>
+          <h3 className="text-2xl font-semibold">Manage Products&nbsp;</h3>
           <div>
             <button className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 mr-2" onClick={fetchProducts}>
               Refresh
             </button>
-         
+            <button className="bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700" onClick={() => setShowAddForm(true)}>
+              Add Product
+            </button>
           </div>
         </div>
         {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
@@ -512,11 +583,86 @@ const ManageProducts = () => {
   );
 };
 
+// --- Order History Component ---
+const OrderHistory = ({ orders, fetchOrders, isLoadingOrders, handleUpdateOrderStatus, handleDeleteOrder }) => (
+  <div className="bg-white p-6 rounded-lg shadow-md">
+    <div className="flex justify-between items-center mb-4">
+      <h3 className="text-2xl font-semibold">Order History&nbsp;</h3>
+      <button className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700" onClick={fetchOrders}>
+        Refresh
+      </button>
+    </div>
+    {isLoadingOrders ? (
+      <p className="text-center text-gray-600">Loading orders...</p>
+    ) : orders.length > 0 ? (
+      <table className="w-full text-left">
+        <thead>
+          <tr className="bg-gray-100">
+            <th className="p-3">Order ID</th>
+            <th className="p-3">User</th>
+            <th className="p-3">Store</th>
+            <th className="p-3">Products</th>
+            <th className="p-3">Total</th>
+            <th className="p-3">Payment Method</th>
+            <th className="p-3">Status</th>
+            <th className="p-3">Created At</th>
+            <th className="p-3">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {orders.map((order) => (
+            <tr key={order._id} className="border-b hover:bg-gray-50">
+              <td className="p-3">{order._id}</td>
+              <td className="p-3">{order.user?.name || order.user || 'N/A'}</td>
+              <td className="p-3">{order.store?.name || order.store || 'N/A'}</td>
+              <td className="p-3">
+                <ul>
+                  {order.products.map((item, index) => (
+                    <li key={index}>
+                      {item.product?.name || item.product || 'N/A'} (Qty: {item.quantity})
+                    </li>
+                  ))}
+                </ul>
+              </td>
+              <td className="p-3">₹{order.total.toFixed(2)}</td>
+              <td className="p-3">{order.paymentMethod}</td>
+              <td className="p-3">{order.status}</td>
+              <td className="p-3">{new Date(order.createdAt).toLocaleString()}</td>
+              <td className="p-3">
+                <div className="flex space-x-2">
+                  {order.status !== 'Delivered' && (
+                    <button
+                      className="bg-green-600 text-white py-1 px-2 rounded hover:bg-green-700"
+                      onClick={() => handleUpdateOrderStatus(order._id, 'Delivered')}
+                    >
+                      Mark as Delivered
+                    </button>
+                  )}
+                  <button
+                    className="bg-red-600 text-white py-1 px-2 rounded hover:bg-red-800"
+                    onClick={() => handleDeleteOrder(order._id)}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    ) : (
+      <div className="text-center">
+        <p className="text-gray-600">No orders found in the database.</p>
+      </div>
+    )}
+  </div>
+);
+
 // --- Manage Contacts Component ---
 const ManageContacts = ({ contacts, fetchContacts, isLoadingContacts, handleDeleteContact }) => (
   <div className="bg-white p-6 rounded-lg shadow-md">
     <div className="flex justify-between items-center mb-4">
-      <h3 className="text-2xl font-semibold">Contact Messages</h3>
+      <h3 className="text-2xl font-semibold">Contact Messages&nbsp;</h3>
       <button className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700" onClick={fetchContacts}>
         Refresh
       </button>
@@ -585,6 +731,8 @@ const Admin = () => {
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [contacts, setContacts] = useState([]);
   const [isLoadingContacts, setIsLoadingContacts] = useState(false);
+  const [orders, setOrders] = useState([]);
+  const [isLoadingOrders, setIsLoadingOrders] = useState(false);
 
   const handleLogin = async (email, password) => {
     try {
@@ -671,9 +819,55 @@ const Admin = () => {
     }
   };
 
+  const fetchOrders = async () => {
+    setIsLoadingOrders(true);
+    try {
+      const response = await fetch('http://localhost:5000/api/orders');
+      if (!response.ok) throw new Error('Failed to fetch orders');
+      const ordersData = await response.json();
+      setOrders(Array.isArray(ordersData) ? ordersData : []);
+    } catch (error) {
+      console.error('Fetch orders error:', error);
+      setError(error.message);
+    } finally {
+      setIsLoadingOrders(false);
+    }
+  };
+
+  const handleUpdateOrderStatus = async (orderId, status) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/orders/${orderId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      if (!response.ok) throw new Error('Failed to update order status');
+      await fetchOrders();
+    } catch (error) {
+      console.error('Update order status error:', error);
+      setError(error.message);
+    }
+  };
+
+  const handleDeleteOrder = async (orderId) => {
+    if (window.confirm('Are you sure you want to delete this order?')) {
+      try {
+        const response = await fetch(`http://localhost:5000/api/orders/${orderId}`, {
+          method: 'DELETE',
+        });
+        if (!response.ok) throw new Error('Failed to delete order');
+        setOrders(orders.filter((order) => order._id !== orderId));
+      } catch (error) {
+        console.error('Delete order error:', error);
+        setError(error.message);
+      }
+    }
+  };
+
   useEffect(() => {
     if (activeSection === 'manageUsers') fetchUsers();
     if (activeSection === 'contact') fetchContacts();
+    if (activeSection === 'orderHistory') fetchOrders();
   }, [activeSection]);
 
   return (
@@ -690,6 +884,7 @@ const Admin = () => {
                 {activeSection === 'manageShops' && 'Manage Shops'}
                 {activeSection === 'manageUsers' && 'Manage Users'}
                 {activeSection === 'manageProducts' && 'Manage Products'}
+                {activeSection === 'orderHistory' && 'Order History'}
                 {activeSection === 'contact' && 'Contact Messages'}
               </h1>
               <div className="flex items-center space-x-2">
@@ -704,8 +899,22 @@ const Admin = () => {
               <ManageUsers users={users} handleDeleteUser={handleDeleteUser} fetchUsers={fetchUsers} isLoadingUsers={isLoadingUsers} />
             )}
             {activeSection === 'manageProducts' && <ManageProducts />}
+            {activeSection === 'orderHistory' && (
+              <OrderHistory
+                orders={orders}
+                fetchOrders={fetchOrders}
+                isLoadingOrders={isLoadingOrders}
+                handleUpdateOrderStatus={handleUpdateOrderStatus}
+                handleDeleteOrder={handleDeleteOrder}
+              />
+            )}
             {activeSection === 'contact' && (
-              <ManageContacts contacts={contacts} fetchContacts={fetchContacts} isLoadingContacts={isLoadingContacts} handleDeleteContact={handleDeleteContact} />
+              <ManageContacts
+                contacts={contacts}
+                fetchContacts={fetchContacts}
+                isLoadingContacts={isLoadingContacts}
+                handleDeleteContact={handleDeleteContact}
+              />
             )}
           </main>
         </div>

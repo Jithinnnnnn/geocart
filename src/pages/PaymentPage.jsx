@@ -6,9 +6,15 @@ const PaymentPage = () => {
   const { state } = useLocation();
   const navigate = useNavigate();
 
-  // Debugging logs to trace state and cart
   console.log('Received state:', state);
-  const { cart, total, orderNumber, timestamp } = state || { cart: [], total: 0, orderNumber: '', timestamp: '' };
+  const { cart, total, orderNumber, timestamp, userId, storeId } = state || {
+    cart: [],
+    total: 0,
+    orderNumber: '',
+    timestamp: '',
+    userId: 'authenticatedUserId',
+    storeId: 'selectedStoreId',
+  };
   console.log('Cart in PaymentPage:', cart);
 
   const [paymentMethod, setPaymentMethod] = useState('card');
@@ -17,7 +23,6 @@ const PaymentPage = () => {
   const [errors, setErrors] = useState({});
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Validation functions
   const validateCardNumber = (number) => /^\d{16}$/.test(number.replace(/\s/g, ''));
   const validateExpiry = (expiry) => /^\d{2}\/\d{2}$/.test(expiry) && new Date(`20${expiry.split('/')[1]}-${expiry.split('/')[0]}-01`) > new Date();
   const validateCvv = (cvv) => /^\d{3,4}$/.test(cvv);
@@ -55,14 +60,15 @@ const PaymentPage = () => {
 
     try {
       const orderData = {
-        userId: 'authenticatedUserId',
-        storeId: 'selectedStoreId',
-        products: cart.map(item => ({ productId: item.id, quantity: item.quantity })),
-        totalAmount: total,
+        userId,
+        storeId,
+        products: cart.map(item => ({ product: item.id, quantity: item.quantity })),
+        total,
         paymentMethod,
         orderNumber,
-        orderDate: timestamp,
       };
+
+      console.log('Sending order data:', orderData);
 
       const response = await fetch('http://localhost:5000/api/orders', {
         method: 'POST',
@@ -70,7 +76,8 @@ const PaymentPage = () => {
         body: JSON.stringify(orderData),
       });
 
-      if (!response.ok) throw new Error('Payment processing failed.');
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || 'Payment processing failed.');
 
       setTimeout(() => {
         if (paymentMethod === 'cod') {
@@ -78,11 +85,13 @@ const PaymentPage = () => {
         } else {
           alert(`Payment of ₹${total.toFixed(2)} for Order #${orderNumber} has been successfully processed. Thank you for your purchase!`);
         }
-        navigate('/order-confirmation', { state: { orderNumber, total, paymentMethod } });
+        navigate('/Shop', {
+          state: { orderNumber, total, paymentMethod, orderedItems: cart },
+        });
       }, 1000);
     } catch (error) {
-      alert('We encountered an issue processing your payment. Please try again or contact support.');
-    } finally {
+      console.error('Payment error:', error);
+      alert(`Error placing order: ${error.message}`);
       setIsProcessing(false);
     }
   };

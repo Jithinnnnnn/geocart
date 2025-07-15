@@ -13,7 +13,10 @@ body, html {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background-color: #f3f4f6;
+  background-image: url("/The_Images/pen-near-notebook-keyboard-twig-cup.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat
 }
 
 .admin-login-card {

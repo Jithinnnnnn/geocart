@@ -46,16 +46,17 @@ const productSchema = new mongoose.Schema({
 const Product = mongoose.model('Product', productSchema);
 
 const orderSchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  store: { type: mongoose.Schema.Types.ObjectId, ref: 'Store' },
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  store: { type: mongoose.Schema.Types.ObjectId, ref: 'Store', required: true },
   products: [{
-    product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
-    quantity: { type: Number, default: 1 },
+    product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
+    quantity: { type: Number, default: 1, min: 1 },
   }],
-  total: { type: Number, required: true },
-  paymentMethod: { type: String, required: true },
-  status: { type: String, default: 'Pending' },
+  total: { type: Number, required: true, min: 0 },
+  paymentMethod: { type: String, required: true, enum: ['card', 'upi', 'cod'] },
+  status: { type: String, default: 'Pending', enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'] },
   createdAt: { type: Date, default: Date.now },
+  orderNumber: { type: String, required: true },
 });
 const Order = mongoose.model('Order', orderSchema);
 
@@ -154,7 +155,7 @@ app.get('/api/stores/nearby', async (req, res) => {
 
 app.get('/api/shops', async (req, res) => {
   try {
-    const shops = await Store.find({});
+    const shops = await Store.find({}).populate('products');
     res.json(shops);
   } catch (error) {
     console.error('Error fetching shops:', error);
@@ -182,7 +183,6 @@ app.delete('/api/shops/:id', async (req, res) => {
   try {
     const deletedShop = await Store.findByIdAndDelete(id);
     if (!deletedShop) return res.status(404).json({ message: 'Shop not found' });
-    // Optionally delete associated products
     await Product.deleteMany({ store: id });
     res.json({ message: 'Shop deleted successfully' });
   } catch (error) {
@@ -208,6 +208,8 @@ app.post('/api/products', async (req, res) => {
     return res.status(400).json({ message: 'All fields (name, price, imageUrl, store) are required' });
   }
   try {
+    const storeExists = await Store.findById(store);
+    if (!storeExists) return res.status(400).json({ message: 'Invalid store ID' });
     const newProduct = new Product({ name, price, imageUrl, store });
     await newProduct.save();
     await Store.findByIdAndUpdate(store, { $push: { products: newProduct._id } });
@@ -232,15 +234,101 @@ app.delete('/api/products/:id', async (req, res) => {
 });
 
 // --- Order Routes ---
-app.post('/api/orders', async (req, res) => {
-  const { userId, storeId, products, total, paymentMethod } = req.body;
+app.get('/api/orders', async (req, res) => {
   try {
-    const newOrder = new Order({ user: userId, store: storeId, products, total, paymentMethod });
+    const orders = await Order.find({})
+      .populate('user', 'name')
+      .populate('store', 'name')
+      .populate('products.product', 'name');
+    res.json(orders);
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+    res.status(500).json({ message: 'Error fetching orders', error: error.message });
+  }
+});
+
+app.post('/api/orders', async (req, res) => {
+  const { userId, storeId, products, total, paymentMethod, orderNumber } = req.body;
+  if (!userId || !storeId || !products || !total || !paymentMethod || !orderNumber) {
+    return res.status(400).json({ message: 'All fields (userId, storeId, products, total, paymentMethod, orderNumber) are required' });
+  }
+  try {
+    const userExists = await User.findById(userId);
+    if (!userExists) return res.status(400).json({ message: 'Invalid user ID' });
+    const storeExists = await Store.findById(storeId);
+    if (!storeExists) return res.status(400).json({ message: 'Invalid store ID' });
+    const validProducts = await Promise.all(
+      products.map(async (item) => {
+        const productExists = await Product.findById(item.product);
+        if (!productExists) throw new Error(`Invalid product ID: ${item.product}`);
+        return { product: item.product, quantity: item.quantity };
+      })
+    );
+    const newOrder = new Order({
+      user: userId,
+      store: storeId,
+      products: validProducts,
+      total,
+      paymentMethod,
+      orderNumber,
+      status: 'Pending',
+    });
     await newOrder.save();
-    res.status(201).json({ message: 'Order placed successfully', orderId: newOrder._id });
+    const populatedOrder = await Order.findById(newOrder._id)
+      .populate('user', 'name')
+      .populate('store', 'name')
+      .populate('products.product', 'name');
+    res.status(201).json({ message: 'Order placed successfully', order: populatedOrder });
   } catch (error) {
     console.error('Error creating order:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: 'Error creating order', error: error.message });
+  }
+});
+
+app.put('/api/orders/:id', async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  if (!status) return res.status(400).json({ message: 'Status is required' });
+  try {
+    const order = await Order.findById(id);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+    order.status = status;
+    await order.save();
+    const populatedOrder = await Order.findById(id)
+      .populate('user', 'name')
+      .populate('store', 'name')
+      .populate('products.product', 'name');
+    res.json({ message: 'Order status updated successfully', order: populatedOrder });
+  } catch (error) {
+    console.error('Error updating order status:', error);
+    res.status(500).json({ message: 'Error updating order status', error: error.message });
+  }
+});
+
+app.delete('/api/orders/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const deletedOrder = await Order.findByIdAndDelete(id);
+    if (!deletedOrder) return res.status(404).json({ message: 'Order not found' });
+    res.json({ message: 'Order deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting order:', error);
+    res.status(500).json({ message: 'Error deleting order', error: error.message });
+  }
+});
+
+// --- User Order History Route ---
+app.get('/api/users/:userId/orders', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const orders = await Order.find({ user: userId })
+      .populate('user', 'name')
+      .populate('store', 'name')
+      .populate('products.product', 'name');
+    res.json(orders);
+  } catch (error) {
+    console.error('Error fetching user orders:', error);
+    res.status(500).json({ message: 'Error fetching user orders', error: error.message });
   }
 });
 
@@ -288,6 +376,9 @@ app.post('/api/admin/login', (req, res) => {
     res.status(400).json({ message: 'Invalid admin credentials' });
   }
 });
+
+
+
 
 // --- Server Start ---
 const PORT = 5000;

@@ -1,14 +1,29 @@
 /* User Module (Full Page) */
 
   .user-module {
-    background-image: url('/The_Images/fb5b2fff-3752-4396-a00b-1cd010336807.jpg'); /* Update with your image path */
-    background-size: cover;
-    background-position: center;
-   background-repeat: no-repeat;
+    position: relative;
     min-height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
+    overflow: hidden;
+    z-index: 0;
+    color: white;
+
+  }
+
+  .user-module video {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    min-width: 100%;
+    min-height: 100%;
+    width: auto;
+    height: auto;
+    z-index: -1;
+    transform: translate(-50%, -50%);
+    object-fit: cover;
+   
   }
   
   .form-container {

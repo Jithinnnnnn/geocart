@@ -112,7 +112,7 @@ const About = () => {
             />
             <div className="team-info">
               <h3>Aravind S</h3>
-              <p className="team-role">Chief Executive Officer</p>
+              <p className="team-role"></p>
               <p className="team-bio">
                 Aravind leads GeoCart's strategic vision and oversees platform development with a 
                 focus on scalability, performance, and market expansion. His background in enterprise 
@@ -128,7 +128,7 @@ const About = () => {
             />
             <div className="team-info">
               <h3>Jithin Jose</h3>
-              <p className="team-role">Chief Technology Officer</p>
+              <p className="team-role"></p>
               <p className="team-bio">
                 Jithin brings extensive expertise in full-stack development and systems integration to GeoCart. 
                 He leads our engineering team in developing scalable architecture and efficient APIs 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import './Shop.css';
 
 const Shop = () => {
@@ -15,65 +15,7 @@ const Shop = () => {
   const [selectedQuote, setSelectedQuote] = useState('');
   const [featuredProducts, setFeaturedProducts] = useState([]);
 
-  // ### Static Data
-  const storeData = [
-    {
-      id: 1,
-      name: 'Alpha Garden',
-      description: 'Providing fresh and healthy produce',
-      rating: 4.8,
-      location: { lat: 40.7268, lon: -73.6343 },
-      products: [
-        { id: 1, name: 'Apple', price: 120.00, imageUrl: '/The_Images/pple-leaves-tail-slice-wallpaper.jpg' },
-        { id: 2, name: 'Orange', price: 80.00, imageUrl: '/The_Images/orange.jpeg' },
-        { id: 3, name: 'Tender Coconut', price: 60.00, imageUrl: '/The_Images/coconut.jpeg' },
-        { id: 4, name: 'Avocado', price: 85.00, imageUrl: '/The_Images/avocado.png' },
-      ],
-    },
-    {
-      id: 2,
-      name: 'Fresh Mart',
-      description: 'Only fresh for you',
-      rating: 4.7,
-      location: { lat: 13.013518, lon: 77.656943 },
-      products: [
-        { id: 6, name: 'Dragon Fruit', price: 99.00, imageUrl: '/The_Images/dragonfruit.jpeg' },
-        { id: 7, name: 'Banana', price: 79.00, imageUrl: '/The_Images/Banana.jpeg' },
-        { id: 8, name: 'Cherries', price: 289.00, imageUrl: '/The_Images/Cherries.jpeg' },
-        { id: 9, name: 'Jack Fruit', price: 150.00, imageUrl: '/The_Images/Jackfruit.jpeg' },
-        { id: 10, name: 'Alphonso Mango', price: 135.00, imageUrl: '/The_Images/mango-.jpeg' },
-      ],
-    },
-    {
-      id: 3,
-      name: 'Smart Deals',
-      description: 'Fresh store for you',
-      rating: 4.9,
-      location: { lat: 13.013518, lon: 77.706943 },
-      products: [
-        { id: 11, name: 'Garlic', price: 120.00, imageUrl: '/The_Images/Garlic.jpeg' },
-        { id: 12, name: 'Potato', price: 89.00, imageUrl: '/The_Images/potato.jpeg' },
-        { id: 13, name: 'Onion', price: 55.00, imageUrl: '/The_Images/onion.jpeg' },
-        { id: 14, name: 'Lychee', price: 250.00, imageUrl: '/The_Images/lychee.jpeg' },
-        { id: 15, name: 'Capsicum', price: 48.00, imageUrl: '/The_Images/capsicum.jpeg' },
-      ],
-    },
-    {
-      id: 4,
-      name: 'Chakappan Store',
-      description: 'Handcrafted items from local artisans',
-      rating: 4.6,
-      location: { lat: 37.7800, lon: -122.4100 },
-      products: [
-        { id: 16, name: 'Lychee', price: 250.00, imageUrl: '/The_Images/lychee.jpeg', description: 'Set of three hand-poured scented candles' },
-        { id: 17, name: 'Merino Wool Infinity Scarf', price: 45.99, imageUrl: '/The_Images/infinity-scarf.jpg', description: 'Hand-knitted using ethically sourced wool' },
-        { id: 18, name: 'Reclaimed Wood Coaster Set', price: 22.99, imageUrl: '/The_Images/wood-coaster-set.jpg', description: 'Set of four with natural wood finish' },
-        { id: 19, name: 'Hand-Thrown Ceramic Mug Set', price: 39.99, imageUrl: '/The_Images/ceramic-mug-set.jpg', description: 'Set of two microwave-safe mugs' },
-        { id: 20, name: 'Premium DIY Craft Kit', price: 49.99, imageUrl: '/The_Images/diy-craft-kit.jpg', description: 'All materials included with step-by-step guide' },
-      ],
-    },
-  ];
-
+  // ### Static Data (for fallback or initial display)
   const quotes = [
     "Supporting local businesses creates a ripple effect of economic prosperity throughout your community.",
     "Local shops aren't just stores—they're the foundation of neighborhood identity and cultural heritage.",
@@ -84,14 +26,30 @@ const Shop = () => {
 
   // ### Effects
   useEffect(() => {
+    // Set random quote
     setSelectedQuote(quotes[Math.floor(Math.random() * quotes.length)]);
-    const featured = storeData.flatMap(store =>
-      store.products.slice(0, 1).map(product => ({
-        ...product,
-        storeName: store.name,
-      }))
-    );
-    setFeaturedProducts(featured);
+
+    // Fetch featured products from the database
+    const fetchFeaturedProducts = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/products');
+        if (!response.ok) throw new Error('Failed to fetch products');
+        const products = await response.json();
+        // Select up to 4 products as featured
+        const featured = products.slice(0, 4).map(product => ({
+          id: product._id.toString(),
+          name: product.name,
+          price: product.price,
+          imageUrl: product.imageUrl,
+          storeName: product.store?.name || 'Unknown Store',
+        }));
+        setFeaturedProducts(featured);
+      } catch (error) {
+        console.error('Error fetching featured products:', error);
+        setLocationError('Error loading featured products');
+      }
+    };
+    fetchFeaturedProducts();
   }, []);
 
   // ### Utility Functions
@@ -108,21 +66,6 @@ const Shop = () => {
     return R * c;
   };
 
-  const getNearbyStores = (userLocation, stores, maxDistance = 10) => {
-    return stores
-      .map((store) => {
-        const distance = calculateDistance(
-          userLocation.lat,
-          userLocation.lon,
-          store.location.lat,
-          store.location.lon
-        );
-        return { ...store, distance };
-      })
-      .filter((store) => store.distance <= maxDistance)
-      .sort((a, b) => a.distance - b.distance);
-  };
-
   // ### Event Handlers
   const handleSearchClick = () => {
     setIsFetchingLocation(true);
@@ -133,12 +76,26 @@ const Shop = () => {
           setUserLocation(location);
           try {
             const response = await fetch(`http://localhost:5000/api/stores/nearby?lat=${location.lat}&lon=${location.lon}`);
+            if (!response.ok) throw new Error('Failed to fetch stores');
             const nearby = await response.json();
-            setNearbyStores(nearby);
-            if (nearby.length > 0) setSelectedStore(nearby[0]);
+            // Normalize product data from the database
+            const normalizedStores = nearby.map(store => ({
+              ...store,
+              id: store._id.toString(),
+              products: store.products.map(product => ({
+                id: product._id.toString(),
+                name: product.name,
+                price: product.price,
+                imageUrl: product.imageUrl,
+                description: product.description,
+              })),
+            }));
+            setNearbyStores(normalizedStores);
+            if (normalizedStores.length > 0) setSelectedStore(normalizedStores[0]);
             setLocationError('');
           } catch (error) {
             setLocationError('Error fetching stores');
+            console.error('Fetch error:', error);
           }
           setIsFetchingLocation(false);
         },
@@ -158,6 +115,7 @@ const Shop = () => {
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('userId');
     navigate('/');
   };
 
@@ -211,13 +169,25 @@ const Shop = () => {
       alert('Your cart is empty. Please add items before proceeding to checkout.');
       return;
     }
+    const userId = localStorage.getItem('userId');
+    if (!userId) {
+      alert('Please log in to proceed.');
+      navigate('/user');
+      return;
+    }
+    if (!selectedStore) {
+      alert('Please select a store before proceeding.');
+      return;
+    }
     const orderDetails = {
       cart: cart.map(item => ({ id: item.id, name: item.name, price: item.price, quantity: item.quantity })),
       total: calculateTotal(),
       timestamp: new Date().toISOString(),
       orderNumber: `GC-${Math.floor(100000 + Math.random() * 900000)}`,
+      userId,
+      storeId: selectedStore._id,
     };
-    console.log('Cart before navigation:', orderDetails.cart); // Debugging log
+    console.log('Cart before navigation:', orderDetails);
     navigate('/payment', { state: orderDetails });
   };
 
@@ -226,16 +196,20 @@ const Shop = () => {
     <section className="featured-products">
       <h2>Featured Products</h2>
       <div className="featured-grid">
-        {featuredProducts.map(product => (
-          <div key={product.id} className="featured-item">
-            <img src={product.imageUrl} alt={product.name} className="featured-image" />
-            <div className="featured-details">
-              <h3>{product.name}</h3>
-              <p className="store-label">From {product.storeName}</p>
-              <p className="price">₹{product.price.toFixed(2)}</p>
+        {featuredProducts.length > 0 ? (
+          featuredProducts.map(product => (
+            <div key={product.id} className="featured-item">
+              <img src={product.imageUrl} alt={product.name} className="featured-image" />
+              <div className="featured-details">
+                <h3>{product.name}</h3>
+                <p className="store-label">From {product.storeName}</p>
+                <p className="price">₹{product.price.toFixed(2)}</p>
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        ) : (
+          <p>No featured products available.</p>
+        )}
       </div>
     </section>
   );
@@ -247,8 +221,8 @@ const Shop = () => {
         <div className="store-grid">
           {nearbyStores.map((store) => (
             <div
-              key={store.id}
-              className={`store-card ${selectedStore?.id === store.id ? 'selected-store' : ''}`}
+              key={store._id}
+              className={`store-card ${selectedStore?._id === store._id ? 'selected-store' : ''}`}
               onClick={() => handleStoreClick(store)}
             >
               <h3>{store.name}</h3>
@@ -371,6 +345,9 @@ const Shop = () => {
                 <span className="cart-badge">{calculateTotalItems()}</span>
               </div>
             )}
+            <Link style={{ marginTop: '65px' }} to="/order-history" className="order-history-link">
+             My Orders
+            </Link>
             <button className="logout-button" onClick={handleLogout} aria-label="Logout">
               <i className="fas fa-sign-out-alt"></i> Log out
             </button>
@@ -394,7 +371,7 @@ const Shop = () => {
           {isFetchingLocation && (
             <div className="loading-indicator">
               <div className="spinner"></div>
-              <p>Finding nearby shops...</p>
+              <p className="bold-white-large">Finding nearby shops...</p>
             </div>
           )}
           {locationError && (

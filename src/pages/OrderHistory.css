@@ -1,0 +1,67 @@
+.order-history-container {
+  min-height: 100vh;
+  background-color: #f3f4f6; /* Tailwind bg-gray-100 */
+  padding: 2rem;
+}
+
+.order-history-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.order-history-header h1 {
+  font-size: 1.875rem; /* Tailwind text-3xl */
+  font-weight: 700; /* Tailwind font-bold */
+}
+
+.order-history-header p {
+  color: #4b5563; /* Tailwind text-gray-600 */
+}
+
+.order-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #ffffff; /* Tailwind bg-white */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Tailwind shadow-md */
+  border-radius: 0.5rem; /* Tailwind rounded-lg */
+}
+
+.order-table th,
+.order-table td {
+  padding: 0.75rem; /* Tailwind p-3 */
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb; /* Tailwind border-gray-200 */
+}
+
+.order-table th {
+  background-color: #f3f4f6; /* Tailwind bg-gray-100 */
+  font-weight: 600; /* Tailwind font-semibold */
+}
+
+.order-table tr:hover {
+  background-color: #f9fafb; /* Tailwind hover:bg-gray-50 */
+}
+
+.order-table ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.order-table li {
+  margin-bottom: 0.25rem;
+}
+
+.back-btn {
+  margin-top: 1.5rem;
+  background-color: #2563eb; /* Tailwind bg-blue-600 */
+  color: #ffffff; /* Tailwind text-white */
+  padding: 0.5rem 1rem; /* Tailwind px-4 py-2 */
+  border-radius: 0.25rem; /* Tailwind rounded */
+  border: none;
+  cursor: pointer;
+}
+
+.back-btn:hover {
+  background-color: #1d4ed8; /* Tailwind hover:bg-blue-700 */
+}

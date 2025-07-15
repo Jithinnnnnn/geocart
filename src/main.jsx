@@ -8,6 +8,8 @@ import Admin from './pages/Admin';
 import About from './pages/About';
 import Shop from './pages/Shop';
 import PaymentPage from './pages/PaymentPage';
+import OrderHistory from './pages/OrderHistory';
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <Router>
     <Routes>
@@ -18,6 +20,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Route path="about" element={<About />} />  
         <Route path="/payment" element={<PaymentPage />} />
         <Route path="/shop" element={<Shop />} />
+        <Route path="/order-history" element={<OrderHistory />} />
       </Route>
     </Routes>
   </Router>
